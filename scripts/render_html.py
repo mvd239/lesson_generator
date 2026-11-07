@@ -328,6 +328,26 @@ def layout_summary(deck: Deck, theme: Theme, index: int, total: int, s: Slide) -
     )
 
 
+def layout_team(deck: Deck, theme: Theme, index: int, total: int, s: Slide) -> str:
+    body = header(theme, str(s.get("title") or ""), s.get("kicker"))
+    people = [str(pr.get("name") or "") for pr in (s.get("people") or []) if str(pr.get("name") or "")]
+    persons = "".join(
+        f'<div class="team-person"><span class="team-photo">фото</span>'
+        f'<span class="team-name">{esc(name)}</span></div>'
+        for name in people)
+    links = "".join(
+        f'<div class="team-qr"><span class="team-qr-title">{esc(link.get("title"))}</span>'
+        f'<span class="team-qr-box">QR</span>'
+        f'<span class="team-qr-label">{esc(link.get("label"))}</span></div>'
+        for link in (s.get("links") or [])[:3])
+    return (
+        f'<section class="slide">{body}<div class="body">'
+        f'<div class="team-people">{persons}</div>'
+        f'<div class="team-links">{links}</div></div>'
+        f'{footer(theme, index, total)}</section>'
+    )
+
+
 def layout_end(deck: Deck, theme: Theme, index: int, total: int, s: Slide) -> str:
     title = str(s.get("title") or "Спасибо за внимание")
     lead = f'<p class="end-lead">{esc(s.get("lead"))}</p>' if s.get("lead") else ""
@@ -356,6 +376,7 @@ LAYOUTS = {
     "table": layout_table,
     "code": layout_code,
     "image": layout_image,
+    "team": layout_team,
     "summary": layout_summary,
     "end": layout_end,
 }
@@ -502,6 +523,22 @@ p { margin: 0; }
 .step-body { padding-top: 2px; }
 .step h3 { font-size: 22px; margin-bottom: 5px; }
 .step p { color: var(--muted); font-size: 17px; line-height: 1.25; }
+
+/* ---------- команда ---------- */
+.team-people { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  gap: 18px; margin: 26px 0 0; }
+.team-person { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.team-photo { width: 128px; height: 128px; border-radius: 50%%; background: var(--accent-soft);
+  border: 2px solid var(--accent); color: var(--muted); font-family: var(--mono); font-size: 15px;
+  display: grid; place-items: center; }
+.team-name { font-weight: 700; font-size: 17px; color: var(--primary); text-align: center; }
+.team-links { display: flex; justify-content: center; gap: 90px; margin-top: 40px; }
+.team-qr { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.team-qr-title { font-weight: 700; font-size: 17px; color: var(--primary); }
+.team-qr-box { width: 148px; height: 148px; border-radius: 10px; border: 2px dashed var(--accent);
+  background: var(--surface); color: var(--muted); font-family: var(--mono); font-size: 24px;
+  display: grid; place-items: center; }
+.team-qr-label { color: var(--muted); font-size: 13px; font-family: var(--mono); }
 
 /* ---------- цитата ---------- */
 .layout-quote { background: var(--surface-alt); padding: 0; }

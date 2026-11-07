@@ -21,6 +21,7 @@ LAYOUTS = {
     "table",
     "code",
     "image",
+    "team",
     "summary",
     "end",
 }

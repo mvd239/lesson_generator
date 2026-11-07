@@ -83,12 +83,16 @@ class Painter:
                         stroke=1 if outline else 0, fill=1)
         self.c.restoreState()
 
-    def ellipse(self, x, y, w, h, color, alpha=None):
+    def ellipse(self, x, y, w, h, color, alpha=None, outline=None, outline_width=1.0):
         self.c.saveState()
         self.c.setFillColor(C(color))
         if alpha is not None:
             self.c.setFillAlpha(alpha)
-        self.c.ellipse(x * 72, self._y(y, h), (x + w) * 72, H - y * 72, stroke=0, fill=1)
+        if outline:
+            self.c.setStrokeColor(C(outline))
+            self.c.setLineWidth(outline_width)
+        self.c.ellipse(x * 72, self._y(y, h), (x + w) * 72, H - y * 72,
+                       stroke=1 if outline else 0, fill=1)
         self.c.restoreState()
 
     def text(self, x, y, w, h, text, *, font="body", size=18, color="#000000",
@@ -632,6 +636,47 @@ def layout_end(p: Painter, deck: Deck, index: int, total: int, s: Slide):
                    size=13, color=mix(t.color("primary"), "#FFFFFF", 0.68))
 
 
+def layout_team(p: Painter, deck: Deck, index: int, total: int, s: Slide):
+    background(p)
+    y = header(p, str(s.get("title") or ""), s.get("kicker"))
+    t = p.t
+    people = [str(pr.get("name") or "") for pr in (s.get("people") or []) if str(pr.get("name") or "")]
+    links = s.get("links") or []
+
+    n = max(1, len(people))
+    slot = t.content_width / n
+    d = 1.35
+    cy = y + 0.10
+    for i, name in enumerate(people[:6]):
+        cx = t.content_left + slot * i + (slot - d) / 2
+        p.ellipse(cx, cy, d, d, t.color("accent_soft"),
+                  outline=t.color("accent"), outline_width=1.25)
+        p.text(cx, cy, d, d, "фото", font="mono", size=12,
+               color=t.color("muted"), align="center", valign="middle")
+        p.text(t.content_left + slot * i + 0.08, cy + d + 0.06, slot - 0.16, 0.5, name,
+               font="body", size=14, color=t.color("primary"), bold=True,
+               align="center", line=1.08)
+
+    count = max(1, len(links))
+    side = 1.55
+    gap = 1.3
+    row_w = count * side + (count - 1) * gap
+    qx0 = t.width / 2 - row_w / 2
+    qy = cy + d + 0.72
+    for i, link in enumerate(links[:3]):
+        qx = qx0 + i * (side + gap)
+        p.rect(qx, qy + 0.36, side, side, t.color("surface"), rounded=True,
+               radius=0.06, outline=t.color("accent"), outline_width=1.5)
+        p.text(qx, qy + 0.36, side, side, "QR", font="mono", size=21,
+               color=t.color("muted"), align="center", valign="middle")
+        p.text(qx - 0.75, qy, side + 1.5, 0.32, str(link.get("title") or ""),
+               font="body", size=13.5, color=t.color("primary"), bold=True, align="center")
+        p.text(qx - 0.55, qy + 0.36 + side + 0.08, side + 1.1, 0.26,
+               str(link.get("label") or ""), font="body", size=11,
+               color=t.color("muted"), align="center")
+    footer(p, index, total)
+
+
 LAYOUTS = {
     "title": layout_title,
     "section": layout_section,
@@ -643,6 +688,7 @@ LAYOUTS = {
     "table": layout_table,
     "code": layout_code,
     "image": layout_image,
+    "team": layout_team,
     "summary": layout_summary,
     "end": layout_end,
 }

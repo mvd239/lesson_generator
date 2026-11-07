@@ -1,0 +1,12 @@
+type: flow
+steps:
+  - title: "Символ"
+    text: "А"
+  - title: "Код"
+    text: "192"
+    mono: true
+  - title: "Байт"
+    text: "11000000"
+    mono: true
+highlight: [3]
+caption: "Символ → число-код → байт"

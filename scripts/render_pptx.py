@@ -64,10 +64,14 @@ def rect(slide, x, y, w, h, color, alpha=None, rounded=False, radius=0.08,
     return shape
 
 
-def ellipse(slide, x, y, w, h, color, alpha=None):
+def ellipse(slide, x, y, w, h, color, alpha=None, outline=None, outline_width=1.0):
     shape = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(x), Inches(y), Inches(w), Inches(h))
     solid(shape, color, alpha)
-    _no_line(shape)
+    if outline:
+        shape.line.color.rgb = _rgb(outline)
+        shape.line.width = Pt(outline_width)
+    else:
+        _no_line(shape)
     return shape
 
 
@@ -664,6 +668,47 @@ def layout_summary(slide, deck: Deck, theme: Theme, index: int, total: int, s: S
     footer(slide, theme, index, total, dark=dark)
 
 
+def layout_team(slide, deck: Deck, theme: Theme, index: int, total: int, s: Slide) -> None:
+    background(slide, theme)
+    y = header(slide, theme, str(s.get("title") or ""), s.get("kicker"))
+    people = [str(p.get("name") or "") for p in (s.get("people") or []) if str(p.get("name") or "")]
+    links = s.get("links") or []
+
+    n = max(1, len(people))
+    slot = theme.content_width / n
+    d = 1.35
+    cy = y + 0.10
+    for i, name in enumerate(people[:6]):
+        cx = theme.content_left + slot * i + (slot - d) / 2
+        ellipse(slide, cx, cy, d, d, theme.color("accent_soft"),
+                outline=theme.color("accent"), outline_width=1.25)
+        textbox(slide, cx, cy, d, d, "фото", font=theme.fonts["body"], size=12.5,
+                color=theme.color("muted"), align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+        textbox(slide, theme.content_left + slot * i + 0.08, cy + d + 0.06, slot - 0.16, 0.5,
+                name, font=theme.fonts["heading"], size=14.5, color=theme.color("primary"),
+                bold=True, align=PP_ALIGN.CENTER, line_spacing=1.08)
+
+    count = max(1, len(links))
+    side = 1.55
+    gap = 1.3
+    row_w = count * side + (count - 1) * gap
+    qx0 = theme.width / 2 - row_w / 2
+    qy = cy + d + 0.72
+    for i, link in enumerate(links[:3]):
+        qx = qx0 + i * (side + gap)
+        rect(slide, qx, qy + 0.36, side, side, theme.color("surface"), rounded=True,
+             radius=0.06, outline=theme.color("accent"), outline_width=1.5)
+        textbox(slide, qx, qy + 0.36, side, side, "QR", font=theme.fonts["mono"], size=21,
+                color=theme.color("muted"), align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+        textbox(slide, qx - 0.75, qy, side + 1.5, 0.32, str(link.get("title") or ""),
+                font=theme.fonts["heading"], size=13.5, color=theme.color("primary"),
+                bold=True, align=PP_ALIGN.CENTER)
+        textbox(slide, qx - 0.55, qy + 0.36 + side + 0.07, side + 1.1, 0.26,
+                str(link.get("label") or ""), font=theme.fonts["body"], size=11,
+                color=theme.color("muted"), align=PP_ALIGN.CENTER)
+    footer(slide, theme, index, total)
+
+
 def layout_end(slide, deck: Deck, theme: Theme, index: int, total: int, s: Slide) -> None:
     background(slide, theme, "primary")
     ellipse(slide, theme.width - 4.0, -1.8, 6.2, 6.2, "#FFFFFF", alpha=0.05)
@@ -699,6 +744,7 @@ LAYOUTS = {
     "table": layout_table,
     "code": layout_code,
     "image": layout_image,
+    "team": layout_team,
     "summary": layout_summary,
     "end": layout_end,
 }

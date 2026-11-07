@@ -1112,6 +1112,53 @@ def scene_gates(sc: Scene, spec: dict) -> None:
     sc.caption(spec.get("caption") or "")
 
 
+def scene_frames(sc: Scene, spec: dict) -> None:
+    """Заглушки: пунктирные рамки под QR-коды или скриншоты."""
+    items = spec.get("items") or []
+    if not items:
+        return
+    title_h = sc.title_block(spec.get("title") or "")
+    caption_h = 60 if spec.get("caption") else 20
+    n = len(items)
+    gap = 110
+    card_w = min(620, (sc.w - 2 * sc.margin - gap * (n - 1)) / n)
+    total = n * card_w + gap * (n - 1)
+    x0 = (sc.w - total) / 2
+    aspect = list(spec.get("aspect") or [1, 1])
+    aw, ah = float(aspect[0]), float(aspect[1])
+    frame_w = card_w - 48
+    frame_h = frame_w * ah / aw
+    max_h = 430
+    if frame_h > max_h:
+        frame_h = max_h
+        frame_w = frame_h * aw / ah
+    text_h = 60 if any(str(i.get("text") or "") for i in items) else 0
+    card_h = 24 + 40 + frame_h + 16 + 26 + text_h + 20
+    y = 110 + title_h + max(0, (sc.h - 110 - title_h - caption_h - card_h) / 2 - 10)
+    for i, item in enumerate(items):
+        x = x0 + i * (card_w + gap)
+        border, _ = sc.tone(item.get("tone") or "blue")
+        sc.rrect(x, y, card_w, card_h, radius=14, fill="card", outline=border,
+                 width=2, shadow=True, glow=border, glow_alpha=50)
+        sc.rrect(x + 20, y + 20, 12, 12, radius=3, fill=border, outline=None, shadow=False)
+        sc.text(x + 44, y + 46, str(item.get("title") or ""), size=26, color="ink", kind="bold")
+        fx = x + (card_w - frame_w) / 2
+        fy = y + 76
+        sc.rrect(fx, fy, frame_w, frame_h, radius=10, fill="paper", outline="muted",
+                 width=2, dashed=True)
+        mark = 26
+        for cx, cy in ((fx, fy), (fx + frame_w - mark, fy),
+                       (fx, fy + frame_h - mark), (fx + frame_w - mark, fy + frame_h - mark)):
+            sc.rrect(cx, cy, mark, mark, radius=4, outline="muted", width=3)
+        sc.text(x + card_w / 2, fy + frame_h + 26, str(item.get("label") or "заглушка"),
+                size=18, color="muted", kind="mono", anchor="mm")
+        text = str(item.get("text") or "")
+        if text:
+            sc.paragraph(x + 24, fy + frame_h + 52, card_w - 48, text, size=19,
+                         color="muted", line=1.3, max_lines=2)
+    sc.caption(spec.get("caption") or "")
+
+
 SCENES = {
     "array": scene_array,
     "radix": scene_radix,
@@ -1124,6 +1171,7 @@ SCENES = {
     "dots": scene_dots,
     "logic": scene_logic,
     "gates": scene_gates,
+    "frames": scene_frames,
 }
 
 

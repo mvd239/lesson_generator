@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Двоичное кодирование — 7 класс</title>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F2F7FB;
+  --surface: #FFFFFF;
+  --ink: #16202B;
+  --primary: #12305B;
+  --primary-dark: #0A1D3A;
+  --muted: #5A6B7B;
+  --line: #D8E1EA;
+  --accent: #0AB2A9;
+  --accent-deep: #0A948C;
+  --accent-soft: #E1F7F5;
+  --ok: #1F9D55;
+  --ok-soft: #E6F7EE;
+  --bad: #D64545;
+  --bad-soft: #FDEAEA;
+  --radius: 14px;
+  --shadow: 0 4px 0 rgba(18, 48, 91, 0.10), 0 10px 24px rgba(18, 48, 91, 0.08);
+  --tile-w: 15rem;
+  --tile-h: 4.25rem;
+  --gap: clamp(1rem, 3vw, 2.25rem);
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-block-size: 100svh;
+  background-color: var(--bg);
+  background-image: radial-gradient(rgba(18, 48, 91, 0.10) 1.2px, transparent 1.3px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font-family: "Comic Neue", "Comic Sans MS", "Segoe UI", sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+/* ---------- Фон: свечение как на слайдах + символы алгебры логики ---------- */
+
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(640px 420px at 88% -6%, rgba(11, 178, 169, 0.18), transparent 70%),
+    radial-gradient(520px 400px at -6% 104%, rgba(11, 178, 169, 0.12), transparent 70%);
+}
+
+.bg__shape {
+  position: absolute;
+  font-size: clamp(3rem, 9vw, 7rem);
+  font-weight: 700;
+  color: var(--primary);
+  animation: float 24s ease-in-out infinite alternate;
+}
+
+.bg__shape:nth-child(1) { left: 4%;  top: 12%;  opacity: 0.10; animation-duration: 26s; }
+.bg__shape:nth-child(2) { right: 6%; top: 8%;   opacity: 0.14; color: var(--accent); animation-duration: 32s; animation-delay: -6s; }
+.bg__shape:nth-child(3) { left: 10%; bottom: 10%; opacity: 0.10; animation-duration: 29s; animation-delay: -12s; }
+.bg__shape:nth-child(4) { right: 9%; bottom: 18%; opacity: 0.12; animation-duration: 35s; animation-delay: -3s; }
+.bg__shape:nth-child(5) { left: 47%; top: 46%;  opacity: 0.09; color: var(--accent); animation-duration: 22s; animation-delay: -9s; }
+.bg__shape:nth-child(6) { right: 30%; top: 4%;  opacity: 0.11; animation-duration: 28s; animation-delay: -15s; }
+.bg__shape:nth-child(7) { left: 2%;  top: 55%;  opacity: 0.12; animation-duration: 31s; animation-delay: -20s; }
+
+@keyframes float {
+  from { transform: translate3d(0, 0, 0) rotate(-8deg); }
+  to   { transform: translate3d(18px, -28px, 0) rotate(8deg); }
+}
+
+/* ---------- Каркас ---------- */
+
+.game {
+  position: relative;
+  z-index: 1;
+  inline-size: min(1100px, 100% - 2rem);
+  margin-inline: auto;
+  padding-block: clamp(1rem, 4vw, 2.5rem) calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+.game__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-block-end: clamp(1rem, 3vw, 1.75rem);
+}
+
+.kicker {
+  margin: 0 0 0.35rem;
+  color: var(--accent-deep);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.game__title {
+  margin: 0;
+  border-left: 6px solid var(--accent);
+  padding-left: 0.75rem;
+  color: var(--primary);
+  font-size: clamp(1.5rem, 4.5vw, 2.2rem);
+  line-height: 1.15;
+}
+
+.game__subtitle {
+  margin: 0.5rem 0 0;
+  border-left: 6px solid transparent;
+  padding-left: calc(0.75rem + 6px);
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.hud {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pill {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(18, 48, 91, 0.06);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: minmax(15rem, 17rem) minmax(0, 1fr);
+  gap: var(--gap);
+  align-items: start;
+}
+
+.tokens,
+.tasks {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.task__text {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.game__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 1.5rem;
+  margin-block-start: clamp(1rem, 3vw, 1.75rem);
+  border-top: 1px solid var(--line);
+  padding-block-start: 0.75rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.game__footer .game__subject {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+/* ---------- Одинаковые карточка и зона ---------- */
+
+.token,
+.slot {
+  inline-size: var(--tile-w);
+  block-size: var(--tile-h);
+  padding: 0.4rem 0.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.token {
+  border: 2px solid rgba(18, 48, 91, 0.22);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.token:hover { transform: translateY(-2px); }
+
+.token:focus-visible,
+.slot:focus-visible,
+.btn:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.token.is-dragging { opacity: 0.35; }
+
+.token.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.token.is-locked { cursor: default; }
+
+.slot {
+  position: relative;
+  flex: 0 0 auto;
+  border: 2px dashed var(--muted);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+
+.slot.is-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.slot.is-correct {
+  border-style: solid;
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  color: var(--ink);
+}
+
+.slot.is-wrong {
+  border-color: var(--bad);
+  background: var(--bad-soft);
+  animation: shake 320ms ease;
+}
+
+.slot.is-filled { cursor: default; }
+
+.slot.is-correct .token {
+  box-shadow: none;
+  border-color: transparent;
+  background: transparent;
+  transform: none;
+}
+
+.slot::after {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  inline-size: 26px;
+  block-size: 26px;
+  display: none;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.slot.is-correct::after { content: "✓"; display: grid; background: var(--ok); }
+.slot.is-wrong::after   { content: "✕"; display: grid; background: var(--bad); }
+
+.drag-ghost {
+  box-shadow: 0 16px 30px rgba(10, 22, 35, 0.28);
+  transform-origin: center;
+  cursor: grabbing;
+  opacity: 0.95;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* ---------- Модальное окно ---------- */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(10, 22, 35, 0.6);
+}
+
+.modal[hidden] { display: none; }
+
+.modal__card {
+  inline-size: min(26rem, 100%);
+  border-top: 6px solid var(--accent);
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgba(10, 22, 35, 0.35);
+  text-align: center;
+}
+
+.modal__score {
+  display: block;
+  color: var(--primary);
+  font-size: clamp(2rem, 10vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.modal__details {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.modal__phrase {
+  margin: 0.5rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.btn {
+  min-block-size: 52px;
+  inline-size: 100%;
+  margin-block-start: 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.btn:active { transform: translateY(1px); }
+
+/* ---------- Доступность ---------- */
+
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Мобильная версия ---------- */
+
+@media (max-width: 880px) {
+  .board { grid-template-columns: 1fr; }
+
+  .tokens { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .token,
+  .slot {
+    inline-size: 100%;
+    block-size: 3.5rem;
+  }
+
+  .task {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .task__text { font-size: 1.05rem; }
+}
+
+@media (max-width: 380px) {
+  .tokens { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg__shape,
+  .token,
+  .slot,
+  .modal {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <span class="bg__shape">∧</span>
+  <span class="bg__shape">∨</span>
+  <span class="bg__shape">¬</span>
+  <span class="bg__shape">0</span>
+  <span class="bg__shape">1</span>
+  <span class="bg__shape">⇒</span>
+  <span class="bg__shape">⊕</span>
+</div>
+
+<div class="game">
+  <header class="game__header">
+    <div>
+      <p class="kicker">Информатика · 7 класс</p>
+      <h1 class="game__title">Двоичное кодирование</h1>
+      <p class="game__subtitle">Перетащи термин в пустую рамку напротив определения</p>
+    </div>
+    <div class="hud">
+      <span class="pill">Верно: <span data-score>0</span>/6</span>
+      <span class="pill">Ошибки: <span data-mistakes>0</span></span>
+    </div>
+  </header>
+
+  <main class="board">
+    <ul class="tokens">
+      <li><span class="token" data-card data-key="byte" tabindex="0" role="button" aria-pressed="false" aria-label="Термин: Байт">Байт</span></li>
+      <li><span class="token" data-card data-key="color-depth" tabindex="0" role="button" aria-pressed="false" aria-label="Термин: Глубина цвета">Глубина цвета</span></li>
+      <li><span class="token" data-card data-key="bit" tabindex="0" role="button" aria-pressed="false" aria-label="Термин: Бит">Бит</span></li>
+      <li><span class="token" data-card data-key="megabyte" tabindex="0" role="button" aria-pressed="false" aria-label="Термин: Мегабайт">Мегабайт</span></li>
+      <li><span class="token" data-card data-key="binary-alphabet" tabindex="0" role="button" aria-pressed="false" aria-label="Термин: Двоичный алфавит">Двоичный алфавит</span></li>
+      <li><span class="token" data-card data-key="kilobyte" tabindex="0" role="button" aria-pressed="false" aria-label="Термин: Килобайт">Килобайт</span></li>
+    </ul>
+
+    <ul class="tasks">
+      <li class="task" data-task>
+        <p class="task__text">Минимальная единица информации: один разряд двоичного кода со значением 0 или 1.</p>
+        <span class="slot" data-dropzone data-answer="bit" tabindex="0" role="button" aria-label="Зона ответа для задания 1">Перетащи сюда</span>
+      </li>
+      <li class="task" data-task>
+        <p class="task__text">Единица объёма информации, которая равна 1024 байтам.</p>
+        <span class="slot" data-dropzone data-answer="kilobyte" tabindex="0" role="button" aria-label="Зона ответа для задания 2">Перетащи сюда</span>
+      </li>
+      <li class="task" data-task>
+        <p class="task__text">Набор из двух символов: нуля и единицы, которыми записана вся информация в компьютере.</p>
+        <span class="slot" data-dropzone data-answer="binary-alphabet" tabindex="0" role="button" aria-label="Зона ответа для задания 3">Перетащи сюда</span>
+      </li>
+      <li class="task" data-task>
+        <p class="task__text">Единица информации, равная восьми битам: стандартная порция для одного символа текста.</p>
+        <span class="slot" data-dropzone data-answer="byte" tabindex="0" role="button" aria-label="Зона ответа для задания 4">Перетащи сюда</span>
+      </li>
+      <li class="task" data-task>
+        <p class="task__text">Характеристика изображения: сколько разрядов кода отведено на цвет одного пикселя.</p>
+        <span class="slot" data-dropzone data-answer="color-depth" tabindex="0" role="button" aria-label="Зона ответа для задания 5">Перетащи сюда</span>
+      </li>
+      <li class="task" data-task>
+        <p class="task__text">Единица объёма информации, которая равна 1024 килобайтам.</p>
+        <span class="slot" data-dropzone data-answer="megabyte" tabindex="0" role="button" aria-label="Зона ответа для задания 6">Перетащи сюда</span>
+      </li>
+    </ul>
+  </main>
+
+  <footer class="game__footer">
+    <span class="game__subject">Информатика</span>
+    <span>Совет: можно сначала нажать карточку, а затем рамку с ответом.</span>
+  </footer>
+</div>
+
+<div class="modal" id="final" role="dialog" aria-modal="true" aria-labelledby="final-title" hidden>
+  <div class="modal__card">
+    <span class="modal__score" id="final-title">6 из 6</span>
+    <p class="modal__details">Ошибок: <span data-final-mistakes>0</span> · Точность: <span data-final-accuracy>100%</span></p>
+    <p class="modal__phrase" data-final-phrase>Безупречно!</p>
+    <button class="btn" id="restart" type="button">Играть снова</button>
+  </div>
+</div>
+
+<p class="visually-hidden" aria-live="polite" data-live></p>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOTAL = 6;
+  var score = 0;
+  var mistakes = 0;
+  var selected = null;
+
+  var scoreEl = document.querySelector("[data-score]");
+  var mistakesEl = document.querySelector("[data-mistakes]");
+  var liveEl = document.querySelector("[data-live]");
+  var modal = document.getElementById("final");
+  var restartBtn = document.getElementById("restart");
+  var finalMistakes = document.querySelector("[data-final-mistakes]");
+  var finalAccuracy = document.querySelector("[data-final-accuracy]");
+  var finalPhrase = document.querySelector("[data-final-phrase]");
+
+  function say(message) {
+    liveEl.textContent = "";
+    window.setTimeout(function () { liveEl.textContent = message; }, 30);
+  }
+
+  function updateHud() {
+    scoreEl.textContent = String(score);
+    mistakesEl.textContent = String(mistakes);
+  }
+
+  function deselect() {
+    if (!selected) return;
+    selected.classList.remove("is-selected");
+    selected.setAttribute("aria-pressed", "false");
+    selected = null;
+  }
+
+  function selectCard(card) {
+    if (!card || card.dataset.placed === "true") return;
+    if (selected === card) {
+      deselect();
+      say("Выбор снят");
+      return;
+    }
+    deselect();
+    selected = card;
+    card.classList.add("is-selected");
+    card.setAttribute("aria-pressed", "true");
+    say("Выбран термин: " + card.textContent.trim());
+  }
+
+  function placeCard(card, zone) {
+    deselect();
+    card.dataset.placed = "true";
+    card.classList.remove("is-dragging");
+    card.classList.add("is-locked");
+    card.removeAttribute("tabindex");
+    card.setAttribute("aria-pressed", "false");
+    zone.textContent = "";
+    zone.appendChild(card);
+    zone.classList.add("is-correct");
+    zone.classList.add("is-filled");
+    zone.removeAttribute("tabindex");
+    score += 1;
+    updateHud();
+    say("Верно");
+    if (score === TOTAL) {
+      window.setTimeout(showFinal, 520);
+    }
+  }
+
+  function rejectAnswer(zone) {
+    mistakes += 1;
+    updateHud();
+    zone.classList.add("is-wrong");
+    say("Попробуй ещё");
+    window.setTimeout(function () {
+      zone.classList.remove("is-wrong");
+    }, 560);
+  }
+
+  function validate(card, zone) {
+    if (!card || !zone) return;
+    if (zone.classList.contains("is-filled")) return;
+    if (card.dataset.placed === "true") return;
+    if (card.dataset.key === zone.dataset.answer) {
+      placeCard(card, zone);
+    } else {
+      rejectAnswer(zone);
+    }
+  }
+
+  function phraseFor(mistakesCount) {
+    if (mistakesCount === 0) return "Безупречно!";
+    if (mistakesCount <= 2) return "Отличная работа!";
+    if (mistakesCount <= 5) return "Хорошо!";
+    return "Есть что повторить";
+  }
+
+  function showFinal() {
+    finalMistakes.textContent = String(mistakes);
+    finalAccuracy.textContent = Math.round(TOTAL / (TOTAL + mistakes) * 100) + "%";
+    finalPhrase.textContent = phraseFor(mistakes);
+    modal.hidden = false;
+    say("Игра завершена. Отлично!");
+    restartBtn.focus();
+  }
+
+  restartBtn.addEventListener("click", function () {
+    window.location.reload();
+  });
+
+  document.addEventListener("click", function (e) {
+    var zone = e.target.closest("[data-dropzone]");
+    if (!zone) return;
+    if (selected) validate(selected, zone);
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var card = e.target.closest ? e.target.closest("[data-card]") : null;
+    if (card) {
+      e.preventDefault();
+      selectCard(card);
+      return;
+    }
+    var zone = e.target.closest ? e.target.closest("[data-dropzone]") : null;
+    if (zone && selected) {
+      e.preventDefault();
+      validate(selected, zone);
+    }
+  });
+
+  function createDragAndDrop(options) {
+    var cardSelector = options.cardSelector;
+    var zoneSelector = options.zoneSelector;
+    var onDrop = options.onDrop;
+    var onTap = options.onTap;
+
+    var MOVE_THRESHOLD = 6;
+    var drag = null;
+
+    function pointOf(e) {
+      var src =
+        (e.changedTouches && e.changedTouches[0]) ||
+        (e.touches && e.touches[0]) ||
+        e;
+      return { x: src.clientX, y: src.clientY };
+    }
+
+    function makeGhost(card) {
+      var rect = card.getBoundingClientRect();
+      var ghost = card.cloneNode(true);
+      ghost.classList.add("drag-ghost");
+      ghost.removeAttribute("data-card");
+      ghost.removeAttribute("id");
+      ghost.removeAttribute("tabindex");
+      ghost.setAttribute("aria-hidden", "true");
+      ghost.style.position = "fixed";
+      ghost.style.left = rect.left + "px";
+      ghost.style.top = rect.top + "px";
+      ghost.style.width = rect.width + "px";
+      ghost.style.height = rect.height + "px";
+      ghost.style.margin = "0";
+      ghost.style.pointerEvents = "none";
+      ghost.style.zIndex = "9999";
+      ghost.style.willChange = "transform";
+      ghost.style.transform = "translate3d(0, 0, 0)";
+      document.body.appendChild(ghost);
+      return ghost;
+    }
+
+    function zoneAt(x, y) {
+      var hit = document.elementFromPoint(x, y);
+      var zone = hit && hit.closest ? hit.closest(zoneSelector) : null;
+      if (!zone) return null;
+      if (zone.classList.contains("is-filled")) return null;
+      return zone;
+    }
+
+    function start(card, p) {
+      if (!card || drag) return false;
+      if (card.dataset.placed === "true") return false;
+      drag = {
+        card: card,
+        ghost: makeGhost(card),
+        startX: p.x,
+        startY: p.y,
+        lastX: p.x,
+        lastY: p.y,
+        moved: false,
+        zone: null
+      };
+      card.classList.add("is-dragging");
+      return true;
+    }
+
+    function move(p) {
+      if (!drag) return;
+      drag.lastX = p.x;
+      drag.lastY = p.y;
+      var dx = p.x - drag.startX;
+      var dy = p.y - drag.startY;
+      if (!drag.moved && Math.sqrt(dx * dx + dy * dy) < MOVE_THRESHOLD) return;
+      drag.moved = true;
+      drag.ghost.style.transform = "translate3d(" + dx + "px," + dy + "px,0)";
+      var zone = zoneAt(p.x, p.y);
+      if (zone !== drag.zone) {
+        if (drag.zone) drag.zone.classList.remove("is-over");
+        drag.zone = zone;
+        if (zone) zone.classList.add("is-over");
+      }
+    }
+
+    function finish(cancelled) {
+      if (!drag) return;
+      var d = drag;
+      drag = null;
+
+      if (d.zone) d.zone.classList.remove("is-over");
+      d.card.classList.remove("is-dragging");
+
+      if (cancelled) {
+        d.ghost.remove();
+        return;
+      }
+
+      if (!d.moved) {
+        d.ghost.remove();
+        if (onTap) onTap(d.card);
+        return;
+      }
+
+      var zone = zoneAt(d.lastX, d.lastY);
+      if (zone) {
+        d.ghost.remove();
+        if (onDrop) onDrop(d.card, zone);
+        return;
+      }
+
+      d.ghost.style.transition = "transform 180ms ease, opacity 180ms ease";
+      d.ghost.style.transform = "translate3d(0,0,0)";
+      d.ghost.style.opacity = "0.65";
+      window.setTimeout(function () {
+        d.ghost.remove();
+      }, 200);
+    }
+
+    function onDown(e) {
+      if (e.button != null && e.button !== 0) return;
+      if (e.touches && e.touches.length > 1) return;
+      if (e.target.closest(zoneSelector)) return;
+      var card = e.target.closest(cardSelector);
+      if (!card) return;
+      if (start(card, pointOf(e)) && e.cancelable) e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!drag) return;
+      if (e.cancelable) e.preventDefault();
+      move(pointOf(e));
+    }
+
+    function onUp(e) {
+      if (!drag) return;
+      var p = pointOf(e);
+      drag.lastX = p.x;
+      drag.lastY = p.y;
+      finish(false);
+    }
+
+    function onCancel() {
+      finish(true);
+    }
+
+    var pointerMode = "PointerEvent" in window;
+
+    if (pointerMode) {
+      document.addEventListener("pointerdown", onDown, { passive: false });
+      document.addEventListener("pointermove", onMove, { passive: false });
+      document.addEventListener("pointerup", onUp);
+      document.addEventListener("pointercancel", onCancel);
+    } else {
+      document.addEventListener("touchstart", onDown, { passive: false });
+      document.addEventListener("touchmove", onMove, { passive: false });
+      document.addEventListener("touchend", onUp);
+      document.addEventListener("touchcancel", onCancel);
+      document.addEventListener("mousedown", onDown);
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    }
+
+    window.addEventListener("blur", onCancel);
+    window.addEventListener("resize", onCancel);
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) onCancel();
+    });
+    document.addEventListener("dragstart", function (e) {
+      e.preventDefault();
+    });
+  }
+
+  createDragAndDrop({
+    cardSelector: "[data-card]",
+    zoneSelector: "[data-dropzone]",
+    onDrop: function (card, zone) { validate(card, zone); },
+    onTap: function (card) { selectCard(card); }
+  });
+})();
+</script>
+
+</body>
+</html>

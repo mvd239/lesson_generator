@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Шаблон интерактивного теста ВПР</title>
+<style>
+  :root {
+    --paper: #f3f6f9; --grid: #e1e8f0; --sheet: #ffffff; --sheet-grid: #eef2f7;
+    --ink: #1c2e4a; --ink-soft: #5b6b84; --rule: #ccd6e3;
+    --accent: #2557c9; --accent-soft: #e6edfb;
+    --inv: #a8326a; --inv-soft: #f8e8ef;
+    --ok: #1d8048; --ok-soft: #e2f3e8;
+    --bad: #c43131; --bad-soft: #fbe6e4;
+    --warn: #9a5b00; --warn-soft: #fff4df;
+    --margin: #e7a0a0;
+    --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+    --f-body: "Golos Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --f-mono: "JetBrains Mono", "Cascadia Mono", Consolas, "Courier New", monospace;
+    --r: 10px; --shadow: 0 6px 18px rgba(20, 35, 60, .07);
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+    background-color: var(--paper);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .app { max-width: 760px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+  .title { font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: -.01em; color: var(--ink); }
+  .subtitle { color: var(--ink-soft); font-size: 13.5px; margin: 2px 0 14px; }
+  .timer {
+    background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 999px;
+    font-variant-numeric: tabular-nums; font-weight: 700; font-size: 16px;
+  }
+  .timer.warn { background: var(--bad); }
+
+  .progress-wrap { background: var(--rule); border-radius: 999px; height: 8px; overflow: hidden; }
+  .progress-bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--inv)); transition: width .3s; }
+  .progress-label { margin: 8px 2px 16px; color: var(--ink-soft); font-weight: 600; font-size: 14px; }
+
+  .card {
+    position: relative; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r);
+    padding: 18px 20px 20px 60px; box-shadow: var(--shadow); min-height: 240px;
+  }
+  .card::before {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 44px; width: 1px;
+    background: var(--margin); opacity: .7; pointer-events: none;
+  }
+  .task-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .task-num { background: var(--accent); color: #fff; padding: 5px 12px; border-radius: 999px; font-weight: 700; font-size: 14px; }
+  .task-type { color: var(--ink-soft); font-size: 13px; font-weight: 600; }
+  .instruction { font-weight: 700; margin: 0 0 8px; font-size: 17px; }
+  .text { margin: 0 0 16px; }
+
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .option {
+    display: flex; align-items: center; gap: 12px; border: 1.5px solid var(--rule); border-radius: 8px;
+    padding: 11px 13px; cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .option:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .option input { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; }
+  .option span { font-size: 16px; }
+
+  .text-input, .open-input {
+    width: 100%; font: inherit; font-size: 16px; padding: 12px 14px;
+    border: 1.5px solid var(--rule); border-radius: 8px; background: var(--sheet);
+  }
+  .text-input:focus, .open-input:focus, .match-select:focus { outline: none; border-color: var(--accent); }
+  .open-input { min-height: 130px; resize: vertical; }
+  .match { display: flex; flex-direction: column; gap: 10px; }
+  .match-row { display: flex; align-items: center; gap: 12px; }
+  .match-left { flex: 1 1 45%; font-weight: 600; }
+  .match-select {
+    flex: 1 1 50%; font: inherit; font-size: 16px; padding: 11px 12px; border: 1.5px solid var(--rule); border-radius: 8px; background: var(--sheet);
+  }
+
+  .nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; }
+  .btn {
+    font: inherit; font-size: 16px; font-weight: 600; padding: 12px 20px; border-radius: 8px;
+    border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); cursor: pointer;
+    transition: border-color .15s, filter .15s, transform .05s;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.07); }
+  .btn-submit { width: 100%; margin-top: 14px; background: var(--ok); border-color: var(--ok); color: #fff; font-size: 17px; }
+  .btn-submit:hover:not(:disabled) { filter: brightness(1.07); }
+  .hint { text-align: center; color: var(--ink-soft); margin-top: 8px; font-size: 13.5px; }
+
+  .results { margin-top: 20px; }
+  .summary {
+    background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: 20px 22px;
+    text-align: center; box-shadow: var(--shadow); margin-bottom: 16px;
+  }
+  .summary .score { font-family: var(--f-display); font-size: 40px; font-weight: 800; color: var(--accent); }
+  .summary .grade { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .result-item {
+    background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: 18px 20px;
+    margin-bottom: 14px; box-shadow: var(--shadow);
+  }
+  .result-item.correct { border-left: 5px solid var(--ok); }
+  .result-item.wrong { border-left: 5px solid var(--bad); }
+  .badge { display: inline-block; padding: 3px 12px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 13px; }
+  .badge.ok { background: var(--ok); }
+  .badge.no { background: var(--bad); }
+  .your, .right { margin: 6px 0; }
+  .your b, .right b { color: var(--ink); }
+  .explain { color: var(--ink-soft); font-size: 15px; margin-top: 8px; }
+  .selfcheck { margin-top: 12px; background: var(--accent-soft); border-radius: 8px; padding: 13px 15px; }
+  .selfcheck .mini-btn {
+    font: inherit; font-size: 15px; font-weight: 600; padding: 9px 15px; margin: 6px 8px 0 0;
+    border-radius: 7px; border: 1px solid var(--rule); background: var(--sheet); cursor: pointer;
+  }
+  .selfcheck .mini-btn.yes:hover { border-color: var(--ok); color: var(--ok); }
+  .selfcheck .mini-btn.no:hover { border-color: var(--bad); color: var(--bad); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="title" id="test-title"></div>
+    <div class="timer" id="timer">10:00</div>
+  </header>
+  <div class="subtitle" id="subtitle"></div>
+
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  <div class="progress-label" id="progress-label">Задание 1 из 5</div>
+
+  <main class="card" id="card"></main>
+
+  <div class="nav">
+    <button class="btn" id="prev">← Назад</button>
+    <button class="btn btn-primary" id="next">Далее →</button>
+  </div>
+
+  <button class="btn btn-submit" id="submit" disabled>Сдать тест</button>
+  <div class="hint" id="submit-hint">Чтобы сдать тест, ответь на все задания.</div>
+
+  <section class="results" id="results" hidden></section>
+</div>
+
+<script>
+/* =====================================================================
+   ДВИЖОК ТЕСТА. Заполни только объект TEST ниже — движок не меняй.
+   Помести в TEST.tasks ВСЕ задания из файла (пул). При каждом запуске
+   движок случайно выбирает 5 заданий (или все, если их меньше 5).
+   Секретные поля (correct, correctText, accept, pairs[].correct, sample,
+   explanation) храни в base64 — см. decodeSecrets и scripts/encode.py.
+   Типы заданий (TEST.tasks[].type):
+     "single"  — выбор одного ответа   (options: [], correct: индекс)
+     "multi"   — выбор нескольких      (options: [], correct: [индексы])
+     "text"    — краткий ответ         (correctText: "ответ", accept: [варианты])
+     "match"   — соответствие          (pairs: [{left, options[], correct}])
+     "open"    — развёрнутый ответ     (sample: "образец ответа")
+   ===================================================================== */
+const TEST = {
+  subject: "Русский язык",
+  grade: "4 класс",
+  title: "ВПР. Русский язык. 4 класс",
+  timerMinutes: 10,
+  // Секретные поля (correct, correctText, accept, pairs[].correct, sample,
+  // explanation) хранятся в base64 и декодируются функцией decodeSecrets().
+  // Кодируй их скриптом scripts/encode.py из скила test-html-shablon.
+  tasks: [
+    {
+      type: "single",
+      instruction: "ЗАМЕНИ: инструкция к заданию",
+      text: "ЗАМЕНИ: текст задания",
+      options: ["Вариант А", "Вариант Б", "Вариант В", "Вариант Г"],
+      correct: "MA==", // base64 от индекса верного варианта (например "0")
+      explanation: "0JfQkNCc0JXQndCYOiDQutGA0LDRgtC60L7QtSDQv9C+0Y/RgdC90LXQvdC40LU="
+    },
+    {
+      type: "multi",
+      instruction: "ЗАМЕНИ: инструкция к заданию",
+      text: "ЗАМЕНИ: текст задания",
+      options: ["Вариант 1", "Вариант 2", "Вариант 3", "Вариант 4"],
+      correct: "WzAsMl0=", // base64 от JSON-массива индексов (например "[0,2]")
+      explanation: "0JfQkNCc0JXQndCYOiDQutGA0LDRgtC60L7QtSDQv9C+0Y/RgdC90LXQvdC40LU="
+    },
+    {
+      type: "text",
+      instruction: "ЗАМЕНИ: инструкция к заданию",
+      text: "ЗАМЕНИ: текст задания",
+      correctText: "Nw==", // base64 от эталона ответа (регистр и пробелы не важны)
+      accept: ["0YHQtdC80Yw="], // base64 от доп. принимаемых вариантов
+      explanation: "0JfQkNCc0JXQndCYOiDQutGA0LDRgtC60L7QtSDQv9C+0Y/RgdC90LXQvdC40LU="
+    },
+    {
+      type: "match",
+      instruction: "ЗАМЕНИ: инструкция к заданию",
+      text: "ЗАМЕНИ: текст задания",
+      pairs: [
+        { left: "слово 1", options: ["Существительное", "Глагол", "Прилагательное"], correct: "0JPQu9Cw0LPQvtC7" },
+        { left: "слово 2", options: ["Существительное", "Глагол", "Прилагательное"], correct: "0KHRg9GJ0LXRgdGC0LLQuNGC0LXQu9GM0L3QvtC1" },
+        { left: "слово 3", options: ["Существительное", "Глагол", "Прилагательное"], correct: "0J/RgNC40LvQsNCz0LDRgtC10LvRjNC90L7QtQ==" }
+      ],
+      explanation: "0JfQkNCc0JXQndCYOiDQutGA0LDRgtC60L7QtSDQv9C+0Y/RgdC90LXQvdC40LU="
+    },
+    {
+      type: "open",
+      instruction: "ЗАМЕНИ: инструкция к заданию",
+      text: "ЗАМЕНИ: текст задания (развёрнутый ответ)",
+      sample: "0JfQkNCc0JXQndCYOiDQvtCx0YDQsNC30LXRhiDQv9GA0LDQstC40LvRjNC90L7Qs9C+INC+0YLQstC10YLQsCAo0LTQu9GPINGB0LDQvNC+0L/RgNC+0LLQtdGA0LrQuCk=",
+      explanation: "0JfQkNCc0JXQndCYOiDQvdCwINGH0YLQviDQvtCx0YDQsNGC0LjRgtGMINCy0L3QuNC80LDQvdC40LUg0L/RgNC4INGB0LDQvNC+0L/RgNC+0LLQtdGA0LrQtQ=="
+    }
+  ]
+};
+
+/* Обфускация секретных полей: правильные ответы и пояснения хранятся
+   в base64 и декодируются в рантайме, чтобы их не было видно в
+   исходном коде (Ctrl+U / DevTools). */
+function B64Dec(b64) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  let bin = "";
+  b64 = String(b64).replace(/=+$/, "");
+  for (let i = 0; i < b64.length; i += 4) {
+    const c1 = chars.indexOf(b64[i]);
+    const c2 = chars.indexOf(b64[i + 1]);
+    const c3 = b64[i + 2] === undefined ? -1 : chars.indexOf(b64[i + 2]);
+    const c4 = b64[i + 3] === undefined ? -1 : chars.indexOf(b64[i + 3]);
+    bin += String.fromCharCode((c1 << 2) | (c2 >> 4));
+    if (c3 !== -1) bin += String.fromCharCode(((c2 & 15) << 4) | (c3 >> 2));
+    if (c4 !== -1) bin += String.fromCharCode(((c3 & 3) << 6) | c4);
+  }
+  const bytes = [];
+  for (let i = 0; i < bin.length; i++) bytes.push(bin.charCodeAt(i));
+  let str = "";
+  let i = 0;
+  while (i < bytes.length) {
+    const b = bytes[i];
+    if (b < 0x80) { str += String.fromCharCode(b); i += 1; }
+    else if (b < 0xE0) { str += String.fromCharCode(((b & 0x1F) << 6) | (bytes[i + 1] & 0x3F)); i += 2; }
+    else if (b < 0xF0) { str += String.fromCharCode(((b & 0x0F) << 12) | ((bytes[i + 1] & 0x3F) << 6) | (bytes[i + 2] & 0x3F)); i += 3; }
+    else { str += String.fromCharCode(((b & 0x07) << 18) | ((bytes[i + 1] & 0x3F) << 12) | ((bytes[i + 2] & 0x3F) << 6) | (bytes[i + 3] & 0x3F)); i += 4; }
+  }
+  return str;
+}
+
+function decodeSecrets() {
+  TEST.tasks.forEach(t => {
+    if (typeof t.correct === "string") {
+      const raw = B64Dec(t.correct);
+      t.correct = t.type === "multi" ? JSON.parse(raw) : Number(raw);
+    }
+    if (typeof t.correctText === "string") t.correctText = B64Dec(t.correctText);
+    if (Array.isArray(t.accept)) t.accept = t.accept.map(x => B64Dec(x));
+    if (typeof t.sample === "string") t.sample = B64Dec(t.sample);
+    if (typeof t.explanation === "string") t.explanation = B64Dec(t.explanation);
+    if (Array.isArray(t.pairs)) t.pairs.forEach(p => { if (typeof p.correct === "string") p.correct = B64Dec(p.correct); });
+  });
+}
+decodeSecrets();
+
+// --- Случайный выбор заданий при каждом запуске ---
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const POOL_SIZE = TEST.tasks.length;
+TEST.tasks = shuffle(TEST.tasks).slice(0, Math.min(5, POOL_SIZE));
+
+const TYPE_LABEL = { single: "Выбор одного ответа", multi: "Выбор нескольких ответов", text: "Краткий ответ", match: "Установление соответствия", open: "Развёрнутый ответ" };
+
+const card = document.getElementById("card");
+const resultsEl = document.getElementById("results");
+const submitBtn = document.getElementById("submit");
+const submitHint = document.getElementById("submit-hint");
+const nextBtn = document.getElementById("next");
+const prevBtn = document.getElementById("prev");
+const progressBar = document.getElementById("progress-bar");
+const progressLabel = document.getElementById("progress-label");
+const timerEl = document.getElementById("timer");
+
+document.getElementById("test-title").textContent = TEST.title;
+document.getElementById("subtitle").textContent =
+  POOL_SIZE > 5
+    ? `При каждом запуске — 5 случайных заданий из ${POOL_SIZE}`
+    : `Заданий в тесте: ${POOL_SIZE}`;
+
+let current = 0;
+let timeLeft = TEST.timerMinutes * 60;
+let timerId = null;
+let submitted = false;
+const answers = TEST.tasks.map(() => null);
+const selfChecked = {}; // для развёрнутых ответов: { index: true/false }
+
+function typeLabel(t) { return TYPE_LABEL[t] || t; }
+
+function render() {
+  const t = TEST.tasks[current];
+  let html = `<div class="task-head"><span class="task-num">Задание ${current + 1}</span><span class="task-type">${typeLabel(t.type)}</span></div>`;
+  html += `<p class="instruction">${t.instruction}</p>`;
+  if (t.text) html += `<p class="text">${t.text}</p>`;
+
+  if (t.type === "single") {
+    html += `<div class="options">`;
+    t.options.forEach((o, idx) => {
+      html += `<label class="option"><input type="radio" name="q" value="${idx}"><span>${o}</span></label>`;
+    });
+    html += `</div>`;
+  } else if (t.type === "multi") {
+    html += `<div class="options">`;
+    t.options.forEach((o, idx) => {
+      html += `<label class="option"><input type="checkbox" name="q" value="${idx}"><span>${o}</span></label>`;
+    });
+    html += `</div>`;
+  } else if (t.type === "text") {
+    html += `<input type="text" class="text-input" placeholder="Введи ответ">`;
+  } else if (t.type === "match") {
+    html += `<div class="match">`;
+    t.pairs.forEach((p, idx) => {
+      html += `<div class="match-row"><span class="match-left">${p.left}</span><select class="match-select" data-pair="${idx}"><option value="">— выбери —</option>`;
+      p.options.forEach(o => { html += `<option value="${o}">${o}</option>`; });
+      html += `</select></div>`;
+    });
+    html += `</div>`;
+  } else if (t.type === "open") {
+    html += `<textarea class="open-input" placeholder="Напиши ответ"></textarea>`;
+  }
+  card.innerHTML = html;
+  restore();
+  updateNav();
+}
+
+function collect() {
+  const t = TEST.tasks[current];
+  if (t.type === "single") { const r = card.querySelector('input[type=radio]:checked'); return r ? Number(r.value) : null; }
+  if (t.type === "multi") { const a = []; card.querySelectorAll('input[type=checkbox]:checked').forEach(c => a.push(Number(c.value))); return a; }
+  if (t.type === "text") return card.querySelector('.text-input').value.trim();
+  if (t.type === "match") { const a = []; card.querySelectorAll('.match-select').forEach(s => a.push(s.value)); return a; }
+  if (t.type === "open") return card.querySelector('.open-input').value.trim();
+  return null;
+}
+
+function restore() {
+  const a = answers[current];
+  const t = TEST.tasks[current];
+  if (a === null) return;
+  if (t.type === "single") { const r = card.querySelector(`input[value="${a}"]`); if (r) r.checked = true; }
+  else if (t.type === "multi") { card.querySelectorAll('input[type=checkbox]').forEach(c => { c.checked = a.includes(Number(c.value)); }); }
+  else if (t.type === "text") { card.querySelector('.text-input').value = a; }
+  else if (t.type === "match") { card.querySelectorAll('.match-select').forEach((s, idx) => { s.value = a[idx] || ""; }); }
+  else if (t.type === "open") { card.querySelector('.open-input').value = a; }
+}
+
+function isAnswered(a, t) {
+  if (a === null || a === undefined) return false;
+  if (t.type === "multi") return Array.isArray(a) && a.length > 0;
+  if (t.type === "match") return Array.isArray(a) && a.length === t.pairs.length && a.every(v => v !== "");
+  return String(a).trim() !== "";
+}
+
+function isCorrect(a, t) {
+  if (t.type === "single") return a === t.correct;
+  if (t.type === "multi") return JSON.stringify([...a].sort()) === JSON.stringify([...t.correct].sort());
+  if (t.type === "text") {
+    const norm = String(a).toLowerCase().replace(/\s+/g, " ").trim();
+    const accepted = [t.correctText, ...(t.accept || [])].map(x => String(x).toLowerCase().replace(/\s+/g, " ").trim());
+    return accepted.includes(norm);
+  }
+  if (t.type === "match") return Array.isArray(a) && a.every((v, idx) => v === t.pairs[idx].correct);
+  return false;
+}
+
+function answeredCount() { return TEST.tasks.filter((t, i) => isAnswered(answers[i], t)).length; }
+
+function updateNav() {
+  prevBtn.disabled = current === 0;
+  nextBtn.hidden = current === TEST.tasks.length - 1;
+  progressLabel.textContent = `Задание ${current + 1} из ${TEST.tasks.length}`;
+  progressBar.style.width = `${(answeredCount() / TEST.tasks.length) * 100}%`;
+  const remaining = TEST.tasks.length - answeredCount();
+  if (remaining === 0) { submitBtn.disabled = false; submitHint.textContent = "Все задания отвечены — можно сдавать тест."; }
+  else { submitBtn.disabled = true; submitHint.textContent = `Чтобы сдать тест, ответь ещё на ${remaining} ${plural(remaining)}.`; }
+}
+
+function plural(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return "задание";
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return "задания";
+  return "заданий";
+}
+
+function fmt(sec) { const m = Math.floor(sec / 60); const s = sec % 60; return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`; }
+
+function startTimer() {
+  timerEl.textContent = fmt(timeLeft);
+  timerId = setInterval(() => {
+    timeLeft--;
+    timerEl.textContent = fmt(timeLeft);
+    if (timeLeft <= 60) timerEl.classList.add("warn");
+    if (timeLeft <= 0) { clearInterval(timerId); submit(); }
+  }, 1000);
+}
+
+function formatYour(a, t) {
+  if (a === null || a === undefined) return "—";
+  if (t.type === "single") return t.options[a] ?? "—";
+  if (t.type === "multi") return a.length ? a.map(i => t.options[i]).join(", ") : "—";
+  if (t.type === "match") return a.map((v, i) => `${t.pairs[i].left} → ${v || "—"}`).join("; ");
+  return String(a);
+}
+
+function formatRight(t) {
+  if (t.type === "single") return t.options[t.correct];
+  if (t.type === "multi") return t.correct.map(i => t.options[i]).join(", ");
+  if (t.type === "text") return t.correctText;
+  if (t.type === "match") return t.pairs.map(p => `${p.left} → ${p.correct}`).join("; ");
+  return "См. образец ответа";
+}
+
+function openIndices() { return TEST.tasks.map((t, i) => t.type === "open" ? i : -1).filter(i => i >= 0); }
+
+function computeScore() {
+  let auto = 0;
+  TEST.tasks.forEach((t, i) => { if (t.type !== "open" && isCorrect(answers[i], t)) auto++; });
+  let self = 0;
+  openIndices().forEach(i => { if (selfChecked[i]) self++; });
+  return auto + self;
+}
+
+function grade(n) { if (n === 5) return "5"; if (n === 4) return "4"; if (n === 3) return "3"; return "2"; }
+
+function renderResults() {
+  const total = TEST.tasks.length;
+  const score = computeScore();
+  let html = `<div class="summary">`;
+  html += `<div class="score">${score} из ${total}</div>`;
+  html += `<div class="grade">Оценка: ${grade(score)}</div>`;
+  html += `<button class="btn btn-primary" id="retake" style="margin-top:14px">Пройти заново</button>`;
+  html += `</div>`;
+
+  TEST.tasks.forEach((t, i) => {
+    const isOpen = t.type === "open";
+    const ok = !isOpen && isCorrect(answers[i], t);
+    const doneSelf = selfChecked[i] === true;
+    const cls = isOpen ? (doneSelf ? "correct" : "") : (ok ? "correct" : "wrong");
+    html += `<div class="result-item ${cls}">`;
+    html += `<div class="task-head"><span class="task-num">Задание ${i + 1}</span><span class="task-type">${typeLabel(t.type)}</span>`;
+    if (isOpen) { html += `<span class="badge ${doneSelf ? "ok" : "no"}">${doneSelf ? "Самопроверка: верно" : "Самопроверка: нет"}</span>`; }
+    else { html += `<span class="badge ${ok ? "ok" : "no"}">${ok ? "Верно" : "Неверно"}</span>`; }
+    html += `</div>`;
+    html += `<p class="instruction">${t.instruction}</p>`;
+    if (t.text) html += `<p class="text">${t.text}</p>`;
+    html += `<p class="your"><b>Твой ответ:</b> ${formatYour(answers[i], t)}</p>`;
+    html += `<p class="right"><b>Правильный ответ:</b> ${formatRight(t)}</p>`;
+    if (isOpen) {
+      html += `<p class="right"><b>Образец:</b> ${t.sample}</p>`;
+      html += `<div class="selfcheck" data-task="${i}">`;
+      html += `<p style="margin:0 0 6px"><b>Самопроверка:</b> твой ответ соответствует образцу по смыслу?</p>`;
+      html += `<button class="mini-btn yes" data-val="1">Да, соответствует</button>`;
+      html += `<button class="mini-btn no" data-val="0">Нет, не соответствует</button>`;
+      html += `</div>`;
+    }
+    html += `<p class="explain">${t.explanation}</p>`;
+    html += `</div>`;
+  });
+  resultsEl.innerHTML = html;
+  resultsEl.querySelectorAll(".selfcheck .mini-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.closest(".selfcheck").dataset.task);
+      selfChecked[idx] = btn.dataset.val === "1";
+      renderResults();
+    });
+  });
+  const retake = resultsEl.querySelector("#retake");
+  if (retake) retake.addEventListener("click", () => location.reload());
+}
+
+function submit() {
+  if (submitted) return;
+  submitted = true;
+  clearInterval(timerId);
+  document.getElementById("card").hidden = true;
+  document.querySelector(".nav").hidden = true;
+  submitBtn.hidden = true;
+  submitHint.hidden = true;
+  resultsEl.hidden = false;
+  renderResults();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+card.addEventListener("change", () => { answers[current] = collect(); updateNav(); });
+card.addEventListener("input", () => { answers[current] = collect(); updateNav(); });
+prevBtn.addEventListener("click", () => { if (current > 0) { current--; render(); } });
+nextBtn.addEventListener("click", () => { if (current < TEST.tasks.length - 1) { current++; render(); } });
+submitBtn.addEventListener("click", submit);
+
+render();
+startTimer();
+</script>
+</body>
+</html>
