@@ -1,0 +1,23 @@
+type: schema
+title: "Запрос к веб-приложению"
+nodes:
+  - id: client
+    title: "Клиент"
+    text: "браузер"
+    tone: blue
+  - id: server
+    title: "Сервер"
+    text: "приложение"
+    tone: teal
+  - id: db
+    title: "База данных"
+    text: "PostgreSQL"
+    tone: purple
+links:
+  - from: client
+    to: server
+    label: "HTTP"
+  - from: server
+    to: db
+    label: "SQL"
+caption: "Клиент отправляет запрос, сервер обращается к базе и возвращает ответ"

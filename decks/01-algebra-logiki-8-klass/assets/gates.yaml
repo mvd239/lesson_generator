@@ -1,0 +1,12 @@
+type: gates
+size: [1600, 560]
+gates:
+  - kind: not
+    input: 1
+    output: 0
+  - kind: and
+    inputs: [1, 1]
+    output: 1
+  - kind: or
+    inputs: [0, 1]
+    output: 1

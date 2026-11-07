@@ -1,0 +1,9 @@
+type: array
+size: [1600, 560]
+rows:
+  - label: "До"
+    values: [42, 17, 68, 33, 55, 9, 75, 26]
+    highlight: [2]
+  - label: "После"
+    values: [9, 17, 26, 33, 42, 55, 68, 75]
+    highlight: [2]

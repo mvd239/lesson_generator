@@ -1,0 +1,15 @@
+type: layers
+title: "Иерархия памяти"
+layers:
+  - label: "Регистры"
+    text: "≈ 1 нс"
+  - label: "Кэш"
+    text: "≈ 10 нс"
+  - label: "Оперативная память"
+    text: "≈ 100 нс"
+  - label: "SSD"
+    text: "≈ 0,1 мс"
+  - label: "Жёсткий диск"
+    text: "≈ 10 мс"
+highlight: 2
+caption: "Чем выше уровень, тем быстрее и меньше по объёму"

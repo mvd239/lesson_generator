@@ -1,0 +1,14 @@
+type: tree
+title: "Двоичное дерево поиска"
+root:
+  value: "50"
+  left:
+    value: "30"
+    left: {value: "20"}
+    right: {value: "40"}
+  right:
+    value: "70"
+    left: {value: "60"}
+    right: {value: "80"}
+highlight: ["30", "20"]
+caption: "Слева — значения меньше 50, справа — больше"

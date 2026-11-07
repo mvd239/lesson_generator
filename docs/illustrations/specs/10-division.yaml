@@ -1,0 +1,7 @@
+type: division
+size: [1600, 700]
+number: 13
+base: 2
+answer: "1101"
+title: "Перевод 13 в двоичную"
+caption: "Остатки читаем снизу вверх"

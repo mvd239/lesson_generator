@@ -1,0 +1,5 @@
+type: array
+size: [1600, 560]
+rows:
+  - values: ["0", "1", "10", "11", "100", "101", "110", "111"]
+    show_index: false

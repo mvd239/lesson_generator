@@ -1,0 +1,6 @@
+type: recursion
+size: [1600, 700]
+function: factorial
+calls: [4, 3, 2, 1]
+returns: [24, 6, 2, 1]
+base_label: "n <= 1 → return 1"

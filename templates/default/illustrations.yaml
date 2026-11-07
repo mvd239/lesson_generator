@@ -1,0 +1,50 @@
+# ============================================================
+#  СТИЛЬ ИЛЛЮСТРАЦИЙ
+#  Гибрид: тёмная «техническая панель» в стиле дерева навыков
+#  + карточки, сетка и подписи из прежнего стиля.
+#  Меняется здесь и только здесь.
+# ============================================================
+
+colors:
+  paper:        "#0A1623"   # фон панели
+  grid:         "#1C334B"   # точки сетки
+  grid_major:   "#274666"   # каждая 5-я линия
+  card:         "#102135"   # карточки
+  ink:          "#E9F2FB"   # основной текст
+  muted:        "#93A7BC"   # второстепенный текст
+  line:         "#29425C"   # обводка карточек
+  blue:         "#6C9BFF"
+  blue_soft:    "#162B4A"
+  red:          "#FF6B95"
+  red_soft:     "#3B1C2B"
+  orange:       "#FFB15C"
+  orange_soft:  "#3A2A18"
+  teal:         "#3BE3D0"
+  teal_soft:    "#0F3B3A"
+  purple:       "#B49CFF"
+  purple_soft:  "#291F46"
+  shadow:       "#000000"
+
+grid:
+  style: dots       # dots | lines | both
+  step: 28
+  major_every: 5
+  minor_width: 1
+  major_width: 1
+  dot_radius: 1.3
+
+cards:
+  radius: 18
+  border: 2
+  shadow_alpha: 70
+  shadow_offset: 8
+  shadow_blur: 20
+
+fonts:
+  body: "Arial"
+  mono: "Courier New"
+
+defaults:
+  size: [1600, 620]
+  background: paper
+  margin: 100

@@ -1,0 +1,17 @@
+type: tree
+size: [1600, 620]
+root:
+  value: "F(4)"
+  left:
+    value: "F(3)"
+    left:
+      value: "F(2)"
+      left: {value: "F(1)"}
+      right: {value: "F(0)"}
+    right: {value: "F(1)"}
+  right:
+    value: "F(2)"
+    left: {value: "F(1)"}
+    right: {value: "F(0)"}
+highlight: ["F(2)", "F(1)"]
+caption: "Одни и те же вызовы повторяются"

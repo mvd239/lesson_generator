@@ -1,0 +1,8 @@
+type: dots
+size: [600, 600]
+background: transparent
+count: 55
+color: teal
+seed: 7
+min_radius: 5
+max_radius: 22
